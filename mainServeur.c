@@ -119,6 +119,7 @@ utilisateur* getUserWithNomPrenom(hashMapUserString* map, char* nom, char* preno
 			return map->elem[i].key;
 		}
 	}
+	return NULL;
 }
 
 int getUserLineWithNomPrenom(char* nomParam, char* prenomParam){
@@ -269,6 +270,10 @@ int modifieUtilisateur(hashMapStringString mapParameters){
 	}
 	
 	utilisateur* user = getUserWithNomPrenom(&mapUtilisateurs ,nom, prenom);
+	if(user == NULL){
+		printf("Erreur, utilisateur introuvable.\n");
+		return 0;
+	}
 	admin = getFromHashMapUserString(&mapUtilisateurs, user);
 
 	if((mail = getFromHashMapStringString(&mapParameters, "mail")) != NULL){
