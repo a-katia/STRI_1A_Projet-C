@@ -145,7 +145,7 @@ int getUserLineWithNomPrenom(char* nomParam, char* prenomParam){
 	}
 
 	fclose(csv);
-	return 0;
+	return -1;
 }
 
 int isUserAdmin(utilisateur user){
@@ -244,12 +244,14 @@ int ajouteUtilisateur(hashMapStringString mapParameters, char* admin){
 
 	addToHashMapUserString(&mapUtilisateurs, newUtilisateur, "0");
 
-	FILE* csv = fopen("mapUsers.csv", "r+");
+	FILE* csv;
+	if(strcmp(admin,"1") == 0){
+		csv = fopen("mapUsers.csv", "w");
+	}else{
+		csv = fopen("mapUsers.csv", "r+");
+	}
 	fseek(csv, 0, SEEK_END); //on va a la fin du fichier
-	printf("Test2\n");
-	printf("%s,%s,%s,%s,%s,%s,%s,%s\n", nom, prenom, mail, adressePostale, numTel, remarque, age, admin);
 	fprintf(csv, "%s,%s,%s,%s,%s,%s,%s,%s\n", nom, prenom, mail, adressePostale, numTel, remarque, age, admin);
-	printf("Test3\n");
 	fclose(csv);
 
 	printf("     Sortie de : ajouteUtilisateur\n");
