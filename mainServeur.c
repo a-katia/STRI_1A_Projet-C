@@ -9,8 +9,8 @@
 
 //Structure utilisateur
 typedef struct {
-	char* nom;  //obligatoire 
-	char* prenom;  //obligatoire
+	char* nom; //obligatoire 
+	char* prenom; //obligatoire
 	char* mail; //obligatoire
 	char* adressePostale; 
 	char* numTel; 
@@ -26,7 +26,7 @@ typedef struct{
 
 typedef struct{
 	int size;
-	elementStringString elem[127];
+	elementStringString elem[BUFSIZ];
 }hashMapStringString;
 
 void addToHashMapStringString(hashMapStringString* map, char* key, char* value){
@@ -53,7 +53,7 @@ typedef struct{
 
 typedef struct{
 	int size;
-	elementUserString elem[127];
+	elementUserString elem[BUFSIZ];
 }hashMapUserString;
 
 void addToHashMapUserString(hashMapUserString* map, utilisateur* key, char* value){
@@ -74,22 +74,26 @@ char* getFromHashMapUserString(hashMapUserString* map, utilisateur* key){
 hashMapUserString mapUtilisateurs = {.size = 0};
 
 utilisateur* getUserWithNomPrenom(char* nom, char* prenom){
-	printf("getUserWithNomPrenom\n");
+	printf("Entrée dans : getUserWithNomPrenom\n");
 	for(int i=0 ; i<mapUtilisateurs.size ; i++){
 		if(mapUtilisateurs.elem[i].key->nom == nom && mapUtilisateurs.elem[i].key->prenom == prenom){
+			
+			printf("Sortie de : getUserWithNomPrenom\n");
 			return mapUtilisateurs.elem[i].key;
 		}
 	}
 }
 
 int getUserLineWithNomPrenom(char* nomParam, char* prenomParam){
-	printf("getUserLineWithNomPrenom\n");
+	printf("Entrée dans : getUserLineWithNomPrenom\n");
 	FILE* csv = fopen("mapUsers.csv", "r");
 	char *nom, *prenom, *mail, *adressePostale, *numTel, *remarque, *age, *admin;
 	int retour = 0;
 	while(fscanf(csv, "%s,%s,%s,%s,%s,%s,%s,%s\n", nom, prenom, mail, adressePostale, numTel, remarque, age, admin) == 8){
 		if(nom == nomParam && prenom == prenomParam){				
 			fclose(csv);
+			
+			printf("Sortie de : getUserLineWithNomPrenom\n");
 			return retour;
 		}
 		retour = ftell(csv);
@@ -108,10 +112,11 @@ int isUserAdmin(utilisateur user){
 }
 
 int extraitRequete(char *requete, hashMapStringString mapParameters){
-	printf("extraitRequete\n");
+	printf("Entrée dans : extraitRequete\n");
+
 	int i, cpt, iString, fin;
 	int taille = strlen(requete);
-	char key[127], value[127];
+	char key[BUFSIZ], value[BUFSIZ];
 
 	for(i=0 ; i<taille-1 && requete[i+1] != '\n' ; i++){
 		if(requete[i] == '/'){
@@ -161,7 +166,7 @@ int extraitRequete(char *requete, hashMapStringString mapParameters){
 }
 
 int ajouteUtilisateur(hashMapStringString mapParameters, char* admin){
-	printf("ajouteUtilisateur\n");
+	printf("Entrée dans : ajouteUtilisateur\n");
 	char *nom, *prenom, *mail, *adressePostale, *numTel, *remarque, *age;
 
 	utilisateur newUtilisateur;
@@ -177,18 +182,22 @@ int ajouteUtilisateur(hashMapStringString mapParameters, char* admin){
 		newUtilisateur.mail = mail;
 	}
 
-	if((adressePostale = getFromHashMapStringString(&mapParameters, "adressePostale")) != NULL){
-		newUtilisateur.adressePostale = adressePostale;
+	if((adressePostale = getFromHashMapStringString(&mapParameters, "adressePostale")) == NULL){
+		adressePostale = " ";
 	}
 	if((numTel = getFromHashMapStringString(&mapParameters, "numTel")) != NULL){
-		newUtilisateur.numTel = numTel;
+		numTel = " ";
 	}
 	if((remarque = getFromHashMapStringString(&mapParameters, "remarque")) != NULL){
-		newUtilisateur.remarque = remarque;
+		remarque = " ";
 	}
 	if((age = getFromHashMapStringString(&mapParameters, "age")) != NULL){
-		newUtilisateur.age = atoi(age);
+		age = " ";
 	}
+	newUtilisateur.adressePostale = adressePostale;
+	newUtilisateur.numTel = numTel;
+	newUtilisateur.remarque = remarque;
+	newUtilisateur.age = atoi(age);
 
 	addToHashMapUserString(&mapUtilisateurs, &newUtilisateur, "0");
 
@@ -198,11 +207,12 @@ int ajouteUtilisateur(hashMapStringString mapParameters, char* admin){
 	fprintf(csv, "%s,%s,%s,%s,%s,%s,%s,%s\n", nom, prenom, mail, adressePostale, numTel, remarque, age, admin);
 	fclose(csv);
 
+	printf("Sortie de : ajouteUtilisateur\n");
 	return 1;
 }
 
 int modifieUtilisateur(hashMapStringString mapParameters){
-	printf("modifieUtilisateur\n");
+	printf("Entrée dans : modifieUtilisateur\n");
 	char *nom, *prenom, *mail, *adressePostale, *numTel, *remarque, *age, *admin;
 
 	if((nom = getFromHashMapStringString(&mapParameters, "nom")) == NULL ||
@@ -237,11 +247,12 @@ int modifieUtilisateur(hashMapStringString mapParameters){
 	fprintf(csv, "%s,%s,%s,%s,%s,%s,%s,%s\n", nom, prenom, mail, adressePostale, numTel, remarque, age, admin);
 	fclose(csv);
 
+	printf("Sortie de : modifieUtilisateur\n");
 	return 1;
 }
 
 int supprimeUtilisateur(hashMapStringString mapParameters){
-	printf("supprimeUtilisateur\n");
+	printf("Entrée dans : supprimeUtilisateur\n");
 	char *nom, *prenom, *mail, *adressePostale, *numTel, *remarque, *age, *admin;
 
 	if((nom = getFromHashMapStringString(&mapParameters, "nom")) == NULL ||
@@ -261,11 +272,12 @@ int supprimeUtilisateur(hashMapStringString mapParameters){
 	}
 	fclose(csv);
 
+	printf("Sortie de : supprimeUtilisateur\n");
 	return 1;
 }
 
-int aiguillageServeur(hashMapStringString mapParameters){
-	printf("aiguillageServeur\n");
+void aiguillageServeur(hashMapStringString mapParameters){
+	printf("Entrée dans : aiguillageServeur\n");
 
 	char* action;
 	printf("ACTION = %s\n", getFromHashMapStringString(&mapParameters, "ACTION"));
@@ -284,6 +296,8 @@ int aiguillageServeur(hashMapStringString mapParameters){
 			break;
 		}
 	}
+	
+	printf("Sortie de : aiguillageServeur\n");
 }
 
 //est ce que la requete est une requete GET
@@ -294,14 +308,37 @@ int isRequeteGet(char *requete){
 	return 0;
 }
 
+void recupereString(char ligne[BUFSIZ], char string[BUFSIZ], int* start, char delimiteur){
+	int i = 0;
+	int cpt = *start;
+	while(ligne[cpt] != delimiteur){
+		string[i] = ligne[cpt];
+		cpt++;
+		i++;
+	}
+	cpt++;
+	*start = cpt;
+}
+
 hashMapUserString initHashMapUserString(){
-	printf("initHashMapUserString\n");
+	printf("Entrée dans : initHashMapUserString\n");
 
 	FILE* csv;
 	if((csv = fopen("mapUsers.csv", "r"))){	
-		char *nom, *prenom, *mail, *adressePostale, *numTel, *remarque, *age, *admin;
-		fseek(csv, 0, SEEK_SET);
-		while(fscanf(csv, "%s,%s,%s,%s,%s,%s,%s,%s\n", nom, prenom, mail, adressePostale, numTel, remarque, age, admin) == 8){
+		char nom[BUFSIZ], prenom[BUFSIZ], mail[BUFSIZ], adressePostale[BUFSIZ], numTel[BUFSIZ], remarque[BUFSIZ], age[BUFSIZ], admin[BUFSIZ];
+		char ligne[BUFSIZ];
+		int cptUser = 0;
+		while(fgets(ligne, BUFSIZ, csv) != NULL){
+			int cpt = 0;
+			recupereString(ligne, nom, &cpt, ',');
+			recupereString(ligne, prenom, &cpt, ',');
+			recupereString(ligne, mail, &cpt, ',');
+			recupereString(ligne, adressePostale, &cpt, ',');
+			recupereString(ligne, numTel, &cpt, ',');
+			recupereString(ligne, remarque, &cpt, ',');
+			recupereString(ligne, age, &cpt, ',');
+			recupereString(ligne, admin, &cpt, '\n');
+
 			utilisateur user;
 			user.nom = nom;
 			user.prenom = prenom;
@@ -310,10 +347,11 @@ hashMapUserString initHashMapUserString(){
 			user.numTel = numTel;
 			user.remarque = remarque;
 			user.age = atoi(age);
-			
 			addToHashMapUserString(&mapUtilisateurs, &user, admin);
-		}
 
+			cptUser++;
+		}
+		printf("%d utilisateur récupéré.\n", cptUser);
 		fclose(csv);
 	}else{
 		hashMapStringString mapParameters = {.size = 0};
@@ -327,6 +365,8 @@ hashMapUserString initHashMapUserString(){
 
 		ajouteUtilisateur(mapParameters, "1");
 	}
+
+	printf("Sortie de : initHashMapUserString\n");
 }
 
 //serveur sur localhost:13214
@@ -348,7 +388,6 @@ int main() {
 			if(isRequeteGet(message) == 1 && extraitRequete(message, mapParameters) == 1){
 				aiguillageServeur(mapParameters);
 			}
-
 
 			free(message);
 		}
