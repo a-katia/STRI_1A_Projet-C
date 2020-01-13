@@ -228,7 +228,7 @@ int ajouteUtilisateur(hashMapStringString mapParameters, char* admin){
 
 	utilisateur* user = getUserWithNomPrenom(&mapUtilisateurs ,nom, prenom);
 	if(user != NULL){
-		printf("Erreur, cet utilisateur existe deja utilisateur.\n");
+		printf("Erreur, cet utilisateur existe deja.\n");
 		return 0;
 	}
 
@@ -453,8 +453,8 @@ void initHashMapUserString(){
 		addToHashMapStringString(&mapParameters, "nom", "Terrier");
 		addToHashMapStringString(&mapParameters, "prenom", "Florian");
 		addToHashMapStringString(&mapParameters, "mail", "florian.leeroy@hotmail.com");
-		addToHashMapStringString(&mapParameters, "adressePostale", "7 Chemin de Dardagna");
-		addToHashMapStringString(&mapParameters, "numTel", "0619422408");
+		addToHashMapStringString(&mapParameters, "adressePostale", "7 Chemin du Semalou");
+		addToHashMapStringString(&mapParameters, "numTel", "0619244208");
 		addToHashMapStringString(&mapParameters, "remarque", " ");
 		addToHashMapStringString(&mapParameters, "age", "21");
 
