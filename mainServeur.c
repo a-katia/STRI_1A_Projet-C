@@ -3,9 +3,11 @@
 #include <string.h>
 #include "serveur.h"
 
-#define ACTION_AJOUTE_UTILISATEUR 1
-#define ACTION_MODIFIE_UTILISATEUR 2
-#define ACTION_SUPPRIME_UTILISATEUR 3
+#define ACTION_CONNEXION 1
+#define ACTION_DECONNEXION 2
+#define ACTION_AJOUTE_UTILISATEUR 3
+#define ACTION_MODIFIE_UTILISATEUR 4
+#define ACTION_SUPPRIME_UTILISATEUR 5
 
 //Structure utilisateur
 typedef struct {
@@ -16,6 +18,8 @@ typedef struct {
 	char* numTel; 
 	char* remarque;
 	int age;
+	char* login; //obligatoire
+	char* password; //obligatoire
 }utilisateur;
 
 //HashMap entre deux strings
@@ -80,6 +84,10 @@ void addToHashMapUserString(hashMapUserString* map, utilisateur key, char* value
 	strcpy(newKey->remarque,key.remarque);
 	newKey->age = key.age;
 	strcpy(newValue, value);
+	newKey->login = malloc(strlen(key.login) * sizeof(char));
+	strcpy(newKey->login,key.login);
+	newKey->password = malloc(strlen(key.password) * sizeof(char));
+	strcpy(newKey->password,key.password);
 
 	map->elem[map->size].key = newKey;
 	map->elem[map->size].value = newValue;
@@ -122,6 +130,19 @@ utilisateur* getUserWithNomPrenom(hashMapUserString* map, char* nom, char* preno
 	return NULL;
 }
 
+utilisateur* getUserWithLogin(hashMapUserString* map, char* login){
+	printf("     Entrée dans : getUserWithLogin\n");
+
+	for(int i=0 ; i<map->size ; i++){
+		if(strcmp(map->elem[i].key->login,login) == 0){
+			
+			printf("     Sortie de : getUserWithLogin\n");
+			return map->elem[i].key;
+		}
+	}
+	return NULL;
+}
+
 int getUserLineWithNomPrenom(char* nomParam, char* prenomParam){
 	printf("     Entrée dans : getUserLineWithNomPrenom\n");
 
@@ -149,11 +170,20 @@ int getUserLineWithNomPrenom(char* nomParam, char* prenomParam){
 	return -1;
 }
 
-int isUserAdmin(utilisateur user){
-	if(getFromHashMapUserString(&mapUtilisateurs, &user) != "1"){
+int isUserAdmin(utilisateur* user){
+	if(strcmp(getFromHashMapUserString(&mapUtilisateurs, user),"1") != 0){
 		return 0;
 	}else{
 		return 1;
+	}
+}
+
+int isMotDePasseValide(char* login, char* password){
+	utilisateur* user = getUserWithLogin(&mapUtilisateurs, login);
+	if(strcmp(password, user->password) == 0){
+		return 1;
+	}else{
+		return 0;
 	}
 }
 
@@ -211,22 +241,31 @@ int extraitRequete(char *requete, hashMapStringString* mapParameters){
 
 int ajouteUtilisateur(hashMapStringString mapParameters, char* admin){
 	printf("     Entrée dans : ajouteUtilisateur\n");
-	char *nom, *prenom, *mail, *adressePostale, *numTel, *remarque, *age;
+	char *nom, *prenom, *mail, *adressePostale, *numTel, *remarque, *age, *login, *password;
 
 	utilisateur newUtilisateur;
 
 	if((nom = getFromHashMapStringString(&mapParameters, "nom")) == NULL ||
 	(prenom = getFromHashMapStringString(&mapParameters, "prenom")) == NULL ||
-	(mail = getFromHashMapStringString(&mapParameters, "mail")) == NULL){
+	(mail = getFromHashMapStringString(&mapParameters, "mail")) == NULL ||
+	(login = getFromHashMapStringString(&mapParameters, "login")) == NULL ||
+	(password = getFromHashMapStringString(&mapParameters, "password")) == NULL){
 		printf("Erreur, données manquantes pour ajouter un nouvel utilisateur.\n");
 		return 0;
 	}else{
 		newUtilisateur.nom = nom;
 		newUtilisateur.prenom = prenom;
 		newUtilisateur.mail = mail;
+		newUtilisateur.login = login;
+		newUtilisateur.password = password;
 	}
 
-	utilisateur* user = getUserWithNomPrenom(&mapUtilisateurs ,nom, prenom);
+	utilisateur* user = getUserWithNomPrenom(&mapUtilisateurs, nom, prenom);
+	if(user != NULL){
+		printf("Erreur, cet utilisateur existe deja.\n");
+		return 0;
+	}
+	user = getUserWithLogin(&mapUtilisateurs, login);
 	if(user != NULL){
 		printf("Erreur, cet utilisateur existe deja.\n");
 		return 0;
@@ -258,7 +297,7 @@ int ajouteUtilisateur(hashMapStringString mapParameters, char* admin){
 		csv = fopen("mapUsers.csv", "r+");
 	}
 	fseek(csv, 0, SEEK_END); //on va a la fin du fichier
-	fprintf(csv, "%s,%s,%s,%s,%s,%s,%s,%s\n", nom, prenom, mail, adressePostale, numTel, remarque, age, admin);
+	fprintf(csv, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n", nom, prenom, mail, adressePostale, numTel, remarque, age, login, password, admin);
 	fclose(csv);
 
 	printf("     Sortie de : ajouteUtilisateur\n");
@@ -267,7 +306,7 @@ int ajouteUtilisateur(hashMapStringString mapParameters, char* admin){
 
 int modifieUtilisateur(hashMapStringString mapParameters){
 	printf("     Entrée dans : modifieUtilisateur\n");
-	char *nom, *prenom, *mail, *adressePostale, *numTel, *remarque, *age, *admin;
+	char *nom, *prenom, *mail, *adressePostale, *numTel, *remarque, *age, *admin, *login, *password;
 
 	if((nom = getFromHashMapStringString(&mapParameters, "nom")) == NULL ||
 	(prenom = getFromHashMapStringString(&mapParameters, "prenom")) == NULL){
@@ -307,6 +346,16 @@ int modifieUtilisateur(hashMapStringString mapParameters){
 	}else{
 		sprintf(age,"%d",user->age);
 	}
+	if((login = getFromHashMapStringString(&mapParameters, "login")) != NULL){
+		user->login = login;
+	}else{
+		login = user->login;
+	}
+	if((password = getFromHashMapStringString(&mapParameters, "password")) != NULL){
+		user->password = password;
+	}else{
+		password = user->password;
+	}
 
 	int pos = getUserLineWithNomPrenom(nom, prenom);
 	int cpt = 0, copie = 1;
@@ -323,7 +372,7 @@ int modifieUtilisateur(hashMapStringString mapParameters){
 		if(copie == 1){
 			putc(c, temp);
 		}else if(copie == 0){
-			fprintf(temp, "%s,%s,%s,%s,%s,%s,%s,%s\n", nom, prenom, mail, adressePostale, numTel, remarque, age, admin);
+			fprintf(temp, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n", nom, prenom, mail, adressePostale, numTel, remarque, age, login, password, admin);
 			copie = -1;
 		}
 
@@ -341,7 +390,7 @@ int modifieUtilisateur(hashMapStringString mapParameters){
 
 int supprimeUtilisateur(hashMapStringString mapParameters){
 	printf("     Entrée dans : supprimeUtilisateur\n");
-	char *nom, *prenom, *mail, *adressePostale, *numTel, *remarque, *age, *admin;
+	char *nom, *prenom;
 
 	if((nom = getFromHashMapStringString(&mapParameters, "nom")) == NULL ||
 	(prenom = getFromHashMapStringString(&mapParameters, "prenom")) == NULL){
@@ -381,7 +430,7 @@ int supprimeUtilisateur(hashMapStringString mapParameters){
 	return 1;
 }
 
-void aiguillageServeur(hashMapStringString mapParameters){
+int aiguillageServeur(hashMapStringString mapParameters, utilisateur* userLogged){
 	printf("     Entrée dans : aiguillageServeur\n");
 
 	char* action;
@@ -390,19 +439,29 @@ void aiguillageServeur(hashMapStringString mapParameters){
 		int actionCod = atoi(action);
 
 		switch (actionCod){
+		case ACTION_DECONNEXION:
+			return 0;
+			break;
 		case ACTION_AJOUTE_UTILISATEUR:
-			ajouteUtilisateur(mapParameters, "0");
+			if(isUserAdmin(userLogged) == 1){
+				ajouteUtilisateur(mapParameters, "0");
+			}
 			break;
 		case ACTION_MODIFIE_UTILISATEUR:
-			modifieUtilisateur(mapParameters);
+			if(isUserAdmin(userLogged) == 1){
+				modifieUtilisateur(mapParameters);
+			}
 			break;
 		case ACTION_SUPPRIME_UTILISATEUR:
-			supprimeUtilisateur(mapParameters);
+			if(isUserAdmin(userLogged) == 1){
+				supprimeUtilisateur(mapParameters);
+			}
 			break;
 		}
 	}
 	
 	printf("     Sortie de : aiguillageServeur\n");
+	return 1;
 }
 
 //est ce que la requete est une requete GET
@@ -420,7 +479,7 @@ void initHashMapUserString(){
 
 	FILE* csv;
 	if((csv = fopen("mapUsers.csv", "r"))){	
-		char nom[BUFSIZ], prenom[BUFSIZ], mail[BUFSIZ], adressePostale[BUFSIZ], numTel[BUFSIZ], remarque[BUFSIZ], age[BUFSIZ], admin[BUFSIZ];
+		char nom[BUFSIZ], prenom[BUFSIZ], mail[BUFSIZ], adressePostale[BUFSIZ], numTel[BUFSIZ], remarque[BUFSIZ], age[BUFSIZ], admin[BUFSIZ], login[BUFSIZ], password[BUFSIZ];
 		char ligne[BUFSIZ];
 		int cptUser = 0;
 		while(fgets(ligne, BUFSIZ, csv) != NULL){
@@ -432,6 +491,8 @@ void initHashMapUserString(){
 			recupereString(ligne, numTel, &cpt, ',');
 			recupereString(ligne, remarque, &cpt, ',');
 			recupereString(ligne, age, &cpt, ',');
+			recupereString(ligne, login, &cpt, ',');
+			recupereString(ligne, password, &cpt, ',');
 			recupereString(ligne, admin, &cpt, '\n');
 
 			utilisateur user;
@@ -442,6 +503,8 @@ void initHashMapUserString(){
 			user.numTel = numTel;
 			user.remarque = remarque;
 			user.age = atoi(age);
+			user.login = login;
+			user.password = password;
 			addToHashMapUserString(&mapUtilisateurs, user, admin);
 
 			cptUser++;
@@ -457,6 +520,8 @@ void initHashMapUserString(){
 		addToHashMapStringString(&mapParameters, "numTel", "0619244208");
 		addToHashMapStringString(&mapParameters, "remarque", " ");
 		addToHashMapStringString(&mapParameters, "age", "21");
+		addToHashMapStringString(&mapParameters, "login", "floliroy");
+		addToHashMapStringString(&mapParameters, "password", "stri");
 
 		ajouteUtilisateur(mapParameters, "1");
 	}
@@ -467,6 +532,9 @@ void initHashMapUserString(){
 //serveur sur localhost:13214
 int main() {
 	char *message = NULL;
+	utilisateur* userLogged;
+	int logged = 0;
+	int retour;
 
 	initHashMapUserString();
 	Initialisation();
@@ -476,17 +544,36 @@ int main() {
 		message = Reception();
 		hashMapStringString mapParameters = {.size = 0};
 
-		if(message != NULL) {
+		if(message != NULL && isRequeteGet(message) == 1 && extraitRequete(message, &mapParameters) == 1) {
 			printf("J'ai recu: %s\n", message);
 
-			if(isRequeteGet(message) == 1 && extraitRequete(message, &mapParameters) == 1){
-				aiguillageServeur(mapParameters);
-			}
+			if(logged == 1){
+				retour = aiguillageServeur(mapParameters, userLogged);
+				if(retour == 0){
+					printf("Deconnexion du login: \"%s\".\n", userLogged->login);
+					logged = 0;
+					free(userLogged);
+				}
+			}else{
+				printf("Attente de connexion...\n");
+				char* login = getFromHashMapStringString(&mapParameters, "login");
+				char* password = getFromHashMapStringString(&mapParameters, "password");
+				char* action = getFromHashMapStringString(&mapParameters, "ACTION");
+				if(login != NULL && password != NULL && action != NULL &&
+				strcmp(action,"1") == 0 && isMotDePasseValide(login, password) == 1){
+					userLogged = malloc(sizeof(utilisateur));
+					userLogged = getUserWithLogin(&mapUtilisateurs, login);
+					logged = 1;
+					printf("Connexion réussie avec le login: \"%s\".\n", login);
+				}
+			}		
 
 			free(message);
 		}
 
 		TerminaisonClient();
+		//logged = 0;
+		//free(userLogged);
 	}
 
 	return 0;
