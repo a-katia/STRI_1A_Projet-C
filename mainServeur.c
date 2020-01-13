@@ -226,6 +226,12 @@ int ajouteUtilisateur(hashMapStringString mapParameters, char* admin){
 		newUtilisateur.mail = mail;
 	}
 
+	utilisateur* user = getUserWithNomPrenom(&mapUtilisateurs ,nom, prenom);
+	if(user != NULL){
+		printf("Erreur, cet utilisateur existe deja utilisateur.\n");
+		return 0;
+	}
+
 	if((adressePostale = getFromHashMapStringString(&mapParameters, "adressePostale")) == NULL){
 		adressePostale = " ";
 	}
