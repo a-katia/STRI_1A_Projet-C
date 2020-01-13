@@ -461,8 +461,6 @@ void initHashMapUserString(){
 //serveur sur localhost:13214
 int main() {
 	char *message = NULL;
-	char *requeteExtrait = malloc(511*sizeof(char));
-
 
 	initHashMapUserString();
 	Initialisation();
@@ -484,8 +482,6 @@ int main() {
 
 		TerminaisonClient();
 	}
-
-	free(requeteExtrait);
 
 	return 0;
 }
